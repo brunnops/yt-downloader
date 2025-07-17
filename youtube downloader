@@ -1,0 +1,10 @@
+youtube-downloader-web/
+├── app.py                  ← futuro script Python com Flask
+├── utils.py                ← funções de download (áudio/vídeo)
+├── requirements.txt        ← bibliotecas que o projeto usa
+├── downloads/              ← onde os arquivos serão salvos
+├── static/
+│   └── script.js           ← JS para fazer requisição ao Flask
+├── templates/
+│   └── index.html          ← HTML simples da interface
+└── README.md
