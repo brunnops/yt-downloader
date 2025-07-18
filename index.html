@@ -1,18 +1,22 @@
-<!-- templates/index.html -->
 <!DOCTYPE html>
-<html>
+<html lang="pt-BR">
 <head>
-  <title>Downloader YouTube</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Downloader de YouTube</title>
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <h1>Baixar vídeo ou áudio do YouTube</h1>
-  <input type="text" id="url" placeholder="Cole o link do YouTube">
-  <select id="tipo">
-    <option value="audio">Áudio (MP3)</option>
-    <option value="video">Vídeo (MP4)</option>
-  </select>
-  <button onclick="baixar()">Baixar</button>
+  <div class="container">
+    <h2>Downloader de YouTube</h2>
+    <input type="text" id="url" placeholder="Cole a URL do vídeo aqui..." />
+    <div>
+      <button onclick="baixar('video')">Baixar Vídeo</button>
+      <button onclick="baixar('audio')">Baixar Áudio</button>
+    </div>
+    <div class="progress" id="progress">Baixando... Aguarde</div>
+  </div>
 
-  <script src="/static/script.js"></script>
+  <script src="script.js"></script>
 </body>
 </html>
