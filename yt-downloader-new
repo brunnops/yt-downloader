@@ -1,0 +1,153 @@
+import tkinter as tk
+from tkinter import filedialog, messagebox, ttk
+import os
+import sys
+import time
+import yt_dlp
+import threading
+
+# Caminho do FFmpeg (compatível com execução como .exe)
+if getattr(sys, 'frozen', False):
+    ffmpeg_path = os.path.join(sys._MEIPASS, "ffmpeg.exe")
+else:
+    ffmpeg_path = os.path.join(os.getcwd(), "ffmpeg.exe")
+
+pasta_destino = ""
+
+def escolher_pasta():
+    global pasta_destino
+    pasta = filedialog.askdirectory()
+    if pasta:
+        pasta_destino = pasta
+        label_pasta.config(text=f"Pasta selecionada:\n{pasta}", fg="green")
+
+def atualizar_progresso(percent, status=""):
+    if not barra_progresso.winfo_ismapped():
+        barra_progresso.pack(pady=5)
+        label_status.pack(pady=5)
+    barra_progresso["value"] = percent
+    texto_status.set(status)
+
+def baixar_audio():
+    def tarefa():
+        link = entrada_link.get().strip()
+        if not link:
+            messagebox.showwarning("Aviso", "Por favor, cole um link do YouTube.")
+            return
+        if not pasta_destino:
+            messagebox.showwarning("Aviso", "Escolha uma pasta para salvar os arquivos.")
+            return
+
+        opcoes = {
+            'format': 'bestaudio/best',
+            'outtmpl': os.path.join(pasta_destino, '%(title)s.%(ext)s'),
+            'postprocessors': [{
+                'key': 'FFmpegExtractAudio',
+                'preferredcodec': 'mp3',
+                'preferredquality': '192',
+            }],
+            'ffmpeg_location': os.path.dirname(ffmpeg_path),
+            'progress_hooks': [hook_progresso],
+            'quiet': True
+        }
+
+        try:
+            atualizar_progresso(0, "Baixando áudio...")
+            with yt_dlp.YoutubeDL(opcoes) as ydl:
+                info = ydl.extract_info(link, download=True)
+                titulo = info.get("title", "audio")
+                caminho_arquivo = os.path.join(pasta_destino, f"{titulo}.mp3")
+                if os.path.exists(caminho_arquivo):
+                    agora = time.time()
+                    os.utime(caminho_arquivo, (agora, agora))
+            atualizar_progresso(100, "Download concluído!")
+        except Exception as e:
+            atualizar_progresso(0, "")
+            messagebox.showerror("Erro", f"Erro ao baixar: {e}")
+
+    threading.Thread(target=tarefa).start()
+
+def baixar_video():
+    def tarefa():
+        link = entrada_link.get().strip()
+        if not link:
+            messagebox.showwarning("Aviso", "Por favor, cole um link do YouTube.")
+            return
+        if not pasta_destino:
+            messagebox.showwarning("Aviso", "Escolha uma pasta para salvar os arquivos.")
+            return
+
+        opcoes = {
+            'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
+            'outtmpl': os.path.join(pasta_destino, '%(title)s.%(ext)s'),
+            'merge_output_format': 'mp4',
+            'ffmpeg_location': os.path.dirname(ffmpeg_path),
+            'postprocessors': [{
+                'key': 'FFmpegVideoConvertor',
+                'preferedformat': 'mp4',
+            }],
+            'progress_hooks': [hook_progresso],
+            'quiet': True
+        }
+
+        try:
+            atualizar_progresso(0, "Baixando vídeo...")
+            with yt_dlp.YoutubeDL(opcoes) as ydl:
+                info = ydl.extract_info(link, download=True)
+                titulo = info.get("title", "video")
+                caminho_arquivo = os.path.join(pasta_destino, f"{titulo}.mp4")
+                if os.path.exists(caminho_arquivo):
+                    agora = time.time()
+                    os.utime(caminho_arquivo, (agora, agora))
+            atualizar_progresso(100, "Download concluído!")
+        except Exception as e:
+            atualizar_progresso(0, "")
+            messagebox.showerror("Erro", f"Erro ao baixar: {e}")
+
+    threading.Thread(target=tarefa).start()
+
+def hook_progresso(d):
+    if d['status'] == 'downloading':
+        total = d.get('total_bytes') or d.get('total_bytes_estimate')
+        baixado = d.get('downloaded_bytes', 0)
+        if total:
+            porcentagem = int(baixado * 100 / total)
+            atualizar_progresso(porcentagem, f"{porcentagem}%")
+    elif d['status'] == 'finished':
+        atualizar_progresso(100, "Processando...")
+
+# Interface
+janela = tk.Tk()
+janela.title("YouTube Downloader")
+janela.geometry("420x270")
+
+label_link = tk.Label(janela, text="Cole o link do vídeo do YouTube:")
+label_link.pack(pady=10)
+
+entrada_link = tk.Entry(janela, width=60)
+entrada_link.pack(pady=5)
+
+botao_pasta = tk.Button(janela, text="Escolher pasta", command=escolher_pasta, bg="gray", fg="white")
+botao_pasta.pack(pady=5)
+
+label_pasta = tk.Label(janela, text="Nenhuma pasta selecionada.", fg="red")
+label_pasta.pack()
+
+frame_botoes = tk.Frame(janela)
+frame_botoes.pack(pady=20)
+
+botao_baixar_mp3 = tk.Button(frame_botoes, text="Baixar Áudio (MP3)", command=baixar_audio, bg="green", fg="white", width=15)
+botao_baixar_mp4 = tk.Button(frame_botoes, text="Baixar Vídeo (MP4)", command=baixar_video, bg="blue", fg="white", width=15)
+
+botao_baixar_mp3.grid(row=0, column=0, padx=10)
+botao_baixar_mp4.grid(row=0, column=1, padx=10)
+
+# Progresso (inicialmente oculto)
+texto_status = tk.StringVar()
+label_status = tk.Label(janela, textvariable=texto_status)
+label_status.pack_forget()
+
+barra_progresso = ttk.Progressbar(janela, length=400, mode='determinate')
+barra_progresso.pack_forget()
+
+janela.mainloop()
